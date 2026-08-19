@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+import db from '../db/database';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+const sessionMatch = cookie?.match(/session=(\d+)/);
+
+if (!sessionMatch) {
+  return Astro.redirect('/login');
+}
+
+const userId = parseInt(sessionMatch[1]);
+const user = db.prepare('SELECT id, name, email, created_at FROM users WHERE id = ?').get(userId) as any;
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title="Dashboard">
+  <div class="w-full max-w-lg space-y-6">
+    <div class="bg-gray-900 rounded-2xl shadow-xl p-8">
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
+          {user.name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <h1 class="text-xl font-bold">{user.name}</h1>
+          <p class="text-gray-400 text-sm">{user.email}</p>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-800 pt-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400">ID de usuario</span>
+          <span class="text-gray-200">#{user.id}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400">Miembro desde</span>
+          <span class="text-gray-200">{new Date(user.created_at).toLocaleDateString('es-ES')}</span>
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" action="/api/logout">
+      <button
+        type="submit"
+        class="w-full py-2.5 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition"
+      >
+        Cerrar sesion
+      </button>
+    </form>
+  </div>
+</Layout>
